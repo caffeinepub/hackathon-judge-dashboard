@@ -1,0 +1,125 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ── Fonts ── */
+@font-face {
+  font-family: "Bricolage Grotesque";
+  src: url("/assets/fonts/BricolageGrotesque[opsz,wdth,wght].woff2") format("woff2");
+  font-display: swap;
+  font-weight: 100 900;
+}
+@font-face {
+  font-family: "Outfit";
+  src: url("/assets/fonts/Outfit[wght].woff2") format("woff2");
+  font-display: swap;
+  font-weight: 100 900;
+}
+
+@layer base {
+  :root {
+    --radius: 0.75rem;
+
+    /* Background: clean off-white with a hint of cool */
+    --background: 0.98 0.005 260;
+    --foreground: 0.18 0.02 265;
+
+    /* Cards: white */
+    --card: 1 0 0;
+    --card-foreground: 0.18 0.02 265;
+
+    /* Popover */
+    --popover: 1 0 0;
+    --popover-foreground: 0.18 0.02 265;
+
+    /* Primary: rich indigo */
+    --primary: 0.46 0.22 265;
+    --primary-foreground: 0.99 0 0;
+
+    /* Secondary: soft lavender tint */
+    --secondary: 0.94 0.03 265;
+    --secondary-foreground: 0.35 0.12 265;
+
+    /* Muted: light gray-blue */
+    --muted: 0.95 0.01 260;
+    --muted-foreground: 0.52 0.04 265;
+
+    /* Accent: electric violet */
+    --accent: 0.88 0.06 280;
+    --accent-foreground: 0.35 0.15 280;
+
+    /* Destructive */
+    --destructive: 0.57 0.245 27.325;
+    --destructive-foreground: 0.985 0 0;
+
+    /* Border / Input */
+    --border: 0.9 0.02 265;
+    --input: 0.9 0.02 265;
+    --ring: 0.46 0.22 265;
+
+    /* Gold / Silver / Bronze for top 3 */
+    --gold: 0.82 0.17 80;
+    --silver: 0.72 0.01 260;
+    --bronze: 0.65 0.12 50;
+
+    /* Charts */
+    --chart-1: 0.54 0.22 265;
+    --chart-2: 0.62 0.18 305;
+    --chart-3: 0.56 0.19 240;
+    --chart-4: 0.72 0.17 180;
+    --chart-5: 0.78 0.15 140;
+
+    /* Sidebar */
+    --sidebar: 0.17 0.025 265;
+    --sidebar-foreground: 0.92 0.02 265;
+    --sidebar-primary: 0.62 0.22 265;
+    --sidebar-primary-foreground: 0.99 0 0;
+    --sidebar-accent: 0.25 0.04 265;
+    --sidebar-accent-foreground: 0.92 0.02 265;
+    --sidebar-border: 0.28 0.03 265;
+    --sidebar-ring: 0.46 0.22 265;
+  }
+
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground font-body;
+    font-feature-settings: "cv11", "ss01";
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-display;
+    font-feature-settings: "cv11", "ss01";
+  }
+}
+
+@layer utilities {
+  .rank-gold {
+    background: linear-gradient(135deg, oklch(0.82 0.17 80 / 0.15), oklch(0.92 0.1 80 / 0.08));
+    border-color: oklch(0.82 0.17 80 / 0.4);
+  }
+  .rank-silver {
+    background: linear-gradient(135deg, oklch(0.72 0.01 260 / 0.12), oklch(0.88 0.01 260 / 0.06));
+    border-color: oklch(0.72 0.01 260 / 0.35);
+  }
+  .rank-bronze {
+    background: linear-gradient(135deg, oklch(0.65 0.12 50 / 0.12), oklch(0.78 0.08 50 / 0.06));
+    border-color: oklch(0.65 0.12 50 / 0.35);
+  }
+
+  .score-pill {
+    @apply inline-flex items-center justify-center rounded-full text-xs font-semibold px-2.5 py-0.5 min-w-[2.5rem];
+  }
+
+  .gradient-hero {
+    background: linear-gradient(135deg,
+      oklch(0.96 0.03 265) 0%,
+      oklch(0.98 0.01 280) 50%,
+      oklch(0.97 0.02 250) 100%
+    );
+  }
+}
