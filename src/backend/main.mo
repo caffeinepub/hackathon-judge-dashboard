@@ -5,12 +5,12 @@ import Order "mo:core/Order";
 import Nat "mo:core/Nat";
 import Principal "mo:core/Principal";
 import Runtime "mo:core/Runtime";
-import Migration "migration";
+
 import MixinAuthorization "authorization/MixinAuthorization";
 import AccessControl "authorization/access-control";
 
 // Specify data migration function in with-clause
-(with migration = Migration.run)
+
 actor {
   // Persistent state
   let teams = Map.empty<Nat, Team>();

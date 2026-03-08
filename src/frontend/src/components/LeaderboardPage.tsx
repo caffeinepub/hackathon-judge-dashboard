@@ -1,4 +1,5 @@
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   Table,
@@ -8,10 +9,72 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Award, BarChart3, Medal, Trophy } from "lucide-react";
+import { Award, BarChart3, Download, Medal, Trophy } from "lucide-react";
 import { motion } from "motion/react";
 import type { LeaderboardEntry } from "../backend.d";
 import { useLeaderboard } from "../hooks/useQueries";
+
+function downloadCSV(entries: LeaderboardEntry[]) {
+  const sorted = [...entries].sort(
+    (a, b) => Number(b.combinedTotal) - Number(a.combinedTotal),
+  );
+
+  const headers = [
+    "Rank",
+    "Team Name",
+    // Round 1
+    "R1 - Problem Understanding (/10)",
+    "R1 - Innovation (/10)",
+    "R1 - System Design (/10)",
+    "R1 - Prototype Progress (/10)",
+    "R1 - Team Explanation (/10)",
+    "Round 1 Total (/50)",
+    // Round 2
+    "R2 - Final Prototype (/15)",
+    "R2 - Technical Complexity (/10)",
+    "R2 - Functionality (/10)",
+    "R2 - UI/UX (/5)",
+    "R2 - Real-world Impact (/10)",
+    "Round 2 Total (/50)",
+    // Overall
+    "Combined Total (/100)",
+  ];
+
+  const rows = sorted.map((entry, idx) => {
+    const r1 = (
+      entry as LeaderboardEntry & { round1Score?: Record<string, bigint> }
+    ).round1Score;
+    const r2 = (
+      entry as LeaderboardEntry & { round2Score?: Record<string, bigint> }
+    ).round2Score;
+    return [
+      idx + 1,
+      `"${entry.team.name.replace(/"/g, '""')}"`,
+      r1 ? Number(r1.problemUnderstanding ?? 0) : 0,
+      r1 ? Number(r1.innovation ?? 0) : 0,
+      r1 ? Number(r1.systemDesign ?? 0) : 0,
+      r1 ? Number(r1.prototypeProgress ?? 0) : 0,
+      r1 ? Number(r1.teamExplanation ?? 0) : 0,
+      Number(entry.round1Total),
+      r2 ? Number(r2.finalPrototype ?? 0) : 0,
+      r2 ? Number(r2.technicalComplexity ?? 0) : 0,
+      r2 ? Number(r2.functionality ?? 0) : 0,
+      r2 ? Number(r2.uiUx ?? 0) : 0,
+      r2 ? Number(r2.realWorldImpact ?? 0) : 0,
+      Number(entry.round2Total),
+      Number(entry.combinedTotal),
+    ].join(",");
+  });
+
+  const csv = [headers.join(","), ...rows].join("\n");
+  const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `hackathon-scores-${new Date().toISOString().slice(0, 10)}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
 
 function RankBadge({ rank }: { rank: number }) {
   if (rank === 1)
@@ -114,9 +177,22 @@ export function LeaderboardPage() {
           </p>
         </div>
         {!isLoading && sorted.length > 0 && (
-          <Badge variant="secondary" className="ml-auto font-medium">
-            {sorted.length} {sorted.length === 1 ? "team" : "teams"}
-          </Badge>
+          <div className="ml-auto flex items-center gap-2">
+            <Badge variant="secondary" className="font-medium hidden sm:flex">
+              {sorted.length} {sorted.length === 1 ? "team" : "teams"}
+            </Badge>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => downloadCSV(sorted)}
+              data-ocid="leaderboard.download.button"
+              className="gap-1.5"
+            >
+              <Download className="w-4 h-4" />
+              <span className="hidden sm:inline">Download CSV</span>
+              <span className="sm:hidden">CSV</span>
+            </Button>
+          </div>
         )}
       </motion.div>
 
