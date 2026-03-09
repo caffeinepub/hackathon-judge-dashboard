@@ -24,9 +24,11 @@ export interface Round1Score {
     teamExplanation: bigint;
 }
 export interface LeaderboardEntry {
+    round2Score?: Round2Score;
     combinedTotal: bigint;
     round1Total: bigint;
     team: Team;
+    round1Score?: Round1Score;
     round2Total: bigint;
 }
 export interface UserProfile {

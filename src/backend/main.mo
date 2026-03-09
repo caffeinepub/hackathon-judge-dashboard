@@ -8,9 +8,10 @@ import Runtime "mo:core/Runtime";
 
 import MixinAuthorization "authorization/MixinAuthorization";
 import AccessControl "authorization/access-control";
+import Migration "migration";
 
 // Specify data migration function in with-clause
-
+(with migration = Migration.run)
 actor {
   // Persistent state
   let teams = Map.empty<Nat, Team>();
@@ -59,8 +60,10 @@ actor {
     totalScore : Nat;
   };
 
-  type LeaderboardEntry = {
+  public type LeaderboardEntry = {
     team : Team;
+    round1Score : ?Round1Score;
+    round2Score : ?Round2Score;
     round1Total : Nat;
     round2Total : Nat;
     combinedTotal : Nat;
@@ -96,6 +99,9 @@ actor {
 
   // Team Management
   public shared ({ caller }) func addTeam(name : Text, description : Text) : async Nat {
+    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
+      Runtime.trap("Unauthorized: Only users can add teams");
+    };
     let teamId = nextTeamId;
     let team : Team = {
       id = teamId;
@@ -108,6 +114,9 @@ actor {
   };
 
   public shared ({ caller }) func addTeams(names : [Text]) : async [Nat] {
+    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
+      Runtime.trap("Unauthorized: Only users can add teams");
+    };
     let filteredNames = names.filter(func(name) { name != "" });
     let newTeamIds = filteredNames.map(
       func(name) {
@@ -176,16 +185,20 @@ actor {
     let entries = teams.entries().toArray();
     let leaderboard = entries.map(
       func((teamId, team)) : LeaderboardEntry {
-        let round1Total = switch (round1Scores.get(teamId)) {
+        let round1Score = round1Scores.get(teamId);
+        let round2Score = round2Scores.get(teamId);
+        let round1Total = switch (round1Score) {
           case (null) { 0 };
           case (?score) { score.totalScore };
         };
-        let round2Total = switch (round2Scores.get(teamId)) {
+        let round2Total = switch (round2Score) {
           case (null) { 0 };
           case (?score) { score.totalScore };
         };
         {
           team;
+          round1Score;
+          round2Score;
           round1Total;
           round2Total;
           combinedTotal = round1Total + round2Total;

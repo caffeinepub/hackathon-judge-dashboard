@@ -106,9 +106,11 @@ export interface Round1Score {
     teamExplanation: bigint;
 }
 export interface LeaderboardEntry {
+    round2Score?: Round2Score;
     combinedTotal: bigint;
     round1Total: bigint;
     team: Team;
+    round1Score?: Round1Score;
     round2Total: bigint;
 }
 export interface UserProfile {
@@ -141,7 +143,7 @@ export interface backendInterface {
     submitRound1Score(teamId: bigint, score: Round1Score): Promise<void>;
     submitRound2Score(teamId: bigint, score: Round2Score): Promise<void>;
 }
-import type { Round1Score as _Round1Score, Round2Score as _Round2Score, UserProfile as _UserProfile, UserRole as _UserRole } from "./declarations/backend.did.d.ts";
+import type { LeaderboardEntry as _LeaderboardEntry, Round1Score as _Round1Score, Round2Score as _Round2Score, Team as _Team, UserProfile as _UserProfile, UserRole as _UserRole } from "./declarations/backend.did.d.ts";
 export class Backend implements backendInterface {
     constructor(private actor: ActorSubclass<_SERVICE>, private _uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, private _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, private processError?: (error: unknown) => never){}
     async _initializeAccessControlWithSecret(arg0: string): Promise<void> {
@@ -260,14 +262,14 @@ export class Backend implements backendInterface {
         if (this.processError) {
             try {
                 const result = await this.actor.getLeaderboard();
-                return result;
+                return from_candid_vec_n6(this._uploadFile, this._downloadFile, result);
             } catch (e) {
                 this.processError(e);
                 throw new Error("unreachable");
             }
         } else {
             const result = await this.actor.getLeaderboard();
-            return result;
+            return from_candid_vec_n6(this._uploadFile, this._downloadFile, result);
         }
     }
     async getTeamScores(arg0: bigint): Promise<[Round1Score | null, Round2Score | null]> {
@@ -275,8 +277,8 @@ export class Backend implements backendInterface {
             try {
                 const result = await this.actor.getTeamScores(arg0);
                 return [
-                    from_candid_opt_n6(this._uploadFile, this._downloadFile, result[0]),
-                    from_candid_opt_n7(this._uploadFile, this._downloadFile, result[1])
+                    from_candid_opt_n10(this._uploadFile, this._downloadFile, result[0]),
+                    from_candid_opt_n9(this._uploadFile, this._downloadFile, result[1])
                 ];
             } catch (e) {
                 this.processError(e);
@@ -285,8 +287,8 @@ export class Backend implements backendInterface {
         } else {
             const result = await this.actor.getTeamScores(arg0);
             return [
-                from_candid_opt_n6(this._uploadFile, this._downloadFile, result[0]),
-                from_candid_opt_n7(this._uploadFile, this._downloadFile, result[1])
+                from_candid_opt_n10(this._uploadFile, this._downloadFile, result[0]),
+                from_candid_opt_n9(this._uploadFile, this._downloadFile, result[1])
             ];
         }
     }
@@ -361,17 +363,44 @@ export class Backend implements backendInterface {
         }
     }
 }
+function from_candid_LeaderboardEntry_n7(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: _LeaderboardEntry): LeaderboardEntry {
+    return from_candid_record_n8(_uploadFile, _downloadFile, value);
+}
 function from_candid_UserRole_n4(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: _UserRole): UserRole {
     return from_candid_variant_n5(_uploadFile, _downloadFile, value);
+}
+function from_candid_opt_n10(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: [] | [_Round1Score]): Round1Score | null {
+    return value.length === 0 ? null : value[0];
 }
 function from_candid_opt_n3(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: [] | [_UserProfile]): UserProfile | null {
     return value.length === 0 ? null : value[0];
 }
-function from_candid_opt_n6(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: [] | [_Round1Score]): Round1Score | null {
+function from_candid_opt_n9(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: [] | [_Round2Score]): Round2Score | null {
     return value.length === 0 ? null : value[0];
 }
-function from_candid_opt_n7(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: [] | [_Round2Score]): Round2Score | null {
-    return value.length === 0 ? null : value[0];
+function from_candid_record_n8(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
+    round2Score: [] | [_Round2Score];
+    combinedTotal: bigint;
+    round1Total: bigint;
+    team: _Team;
+    round1Score: [] | [_Round1Score];
+    round2Total: bigint;
+}): {
+    round2Score?: Round2Score;
+    combinedTotal: bigint;
+    round1Total: bigint;
+    team: Team;
+    round1Score?: Round1Score;
+    round2Total: bigint;
+} {
+    return {
+        round2Score: record_opt_to_undefined(from_candid_opt_n9(_uploadFile, _downloadFile, value.round2Score)),
+        combinedTotal: value.combinedTotal,
+        round1Total: value.round1Total,
+        team: value.team,
+        round1Score: record_opt_to_undefined(from_candid_opt_n10(_uploadFile, _downloadFile, value.round1Score)),
+        round2Total: value.round2Total
+    };
 }
 function from_candid_variant_n5(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
     admin: null;
@@ -381,6 +410,9 @@ function from_candid_variant_n5(_uploadFile: (file: ExternalBlob) => Promise<Uin
     guest: null;
 }): UserRole {
     return "admin" in value ? UserRole.admin : "user" in value ? UserRole.user : "guest" in value ? UserRole.guest : value;
+}
+function from_candid_vec_n6(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: Array<_LeaderboardEntry>): Array<LeaderboardEntry> {
+    return value.map((x)=>from_candid_LeaderboardEntry_n7(_uploadFile, _downloadFile, x));
 }
 function to_candid_UserRole_n1(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: UserRole): _UserRole {
     return to_candid_variant_n2(_uploadFile, _downloadFile, value);

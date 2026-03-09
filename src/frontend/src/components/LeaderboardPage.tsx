@@ -41,26 +41,22 @@ function downloadCSV(entries: LeaderboardEntry[]) {
   ];
 
   const rows = sorted.map((entry, idx) => {
-    const r1 = (
-      entry as LeaderboardEntry & { round1Score?: Record<string, bigint> }
-    ).round1Score;
-    const r2 = (
-      entry as LeaderboardEntry & { round2Score?: Record<string, bigint> }
-    ).round2Score;
+    const r1 = entry.round1Score;
+    const r2 = entry.round2Score;
     return [
       idx + 1,
       `"${entry.team.name.replace(/"/g, '""')}"`,
-      r1 ? Number(r1.problemUnderstanding ?? 0) : 0,
-      r1 ? Number(r1.innovation ?? 0) : 0,
-      r1 ? Number(r1.systemDesign ?? 0) : 0,
-      r1 ? Number(r1.prototypeProgress ?? 0) : 0,
-      r1 ? Number(r1.teamExplanation ?? 0) : 0,
+      r1 ? Number(r1.problemUnderstanding) : 0,
+      r1 ? Number(r1.innovation) : 0,
+      r1 ? Number(r1.systemDesign) : 0,
+      r1 ? Number(r1.prototypeProgress) : 0,
+      r1 ? Number(r1.teamExplanation) : 0,
       Number(entry.round1Total),
-      r2 ? Number(r2.finalPrototype ?? 0) : 0,
-      r2 ? Number(r2.technicalComplexity ?? 0) : 0,
-      r2 ? Number(r2.functionality ?? 0) : 0,
-      r2 ? Number(r2.uiUx ?? 0) : 0,
-      r2 ? Number(r2.realWorldImpact ?? 0) : 0,
+      r2 ? Number(r2.finalPrototype) : 0,
+      r2 ? Number(r2.technicalComplexity) : 0,
+      r2 ? Number(r2.functionality) : 0,
+      r2 ? Number(r2.uiUx) : 0,
+      r2 ? Number(r2.realWorldImpact) : 0,
       Number(entry.round2Total),
       Number(entry.combinedTotal),
     ].join(",");
@@ -105,15 +101,38 @@ function RankBadge({ rank }: { rank: number }) {
   );
 }
 
-function ScoreBadge({
-  score,
+/** Compact cell showing "score/max" or "—" when not scored */
+function CriteriaCell({
+  value,
   max,
-  variant = "default",
 }: {
-  score: number;
+  value: bigint | undefined;
   max: number;
-  variant?: "r1" | "r2" | "default";
 }) {
+  if (value === undefined) {
+    return <span className="text-muted-foreground/50 tabular-nums">—</span>;
+  }
+  const n = Number(value);
+  const pct = (n / max) * 100;
+  const colorClass =
+    pct >= 80
+      ? "text-emerald-600"
+      : pct >= 60
+        ? "text-blue-600"
+        : pct >= 40
+          ? "text-amber-600"
+          : "text-slate-500";
+
+  return (
+    <span className={`tabular-nums text-xs font-semibold ${colorClass}`}>
+      {n}
+      <span className="text-muted-foreground font-normal">/{max}</span>
+    </span>
+  );
+}
+
+/** Total score cell with colored badge */
+function TotalCell({ score, max }: { score: number; max: number }) {
   const pct = (score / max) * 100;
   const colorClass =
     pct >= 80
@@ -124,20 +143,11 @@ function ScoreBadge({
           ? "bg-amber-100 text-amber-700 border-amber-200"
           : "bg-slate-100 text-slate-600 border-slate-200";
 
-  if (variant === "default") {
-    return (
-      <span
-        className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-sm font-semibold tabular-nums ${colorClass}`}
-      >
-        {score}/{max}
-      </span>
-    );
-  }
-
   return (
-    <span className="text-sm tabular-nums font-medium text-foreground">
-      {score}
-      <span className="text-muted-foreground">/{max}</span>
+    <span
+      className={`inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-semibold tabular-nums ${colorClass}`}
+    >
+      {score}/{max}
     </span>
   );
 }
@@ -147,6 +157,26 @@ function getRowClass(rank: number) {
   if (rank === 2) return "rank-silver border";
   if (rank === 3) return "rank-bronze border";
   return "";
+}
+
+// Column group header helper
+function GroupHead({
+  children,
+  colSpan,
+  className = "",
+}: {
+  children: React.ReactNode;
+  colSpan: number;
+  className?: string;
+}) {
+  return (
+    <TableHead
+      colSpan={colSpan}
+      className={`text-center text-xs font-bold uppercase tracking-wider py-1.5 border-b-0 ${className}`}
+    >
+      {children}
+    </TableHead>
+  );
 }
 
 export function LeaderboardPage() {
@@ -242,65 +272,246 @@ export function LeaderboardPage() {
           className="rounded-xl border border-border overflow-hidden bg-card shadow-xs"
           data-ocid="leaderboard.table"
         >
-          <Table>
-            <TableHeader>
-              <TableRow className="bg-muted/50">
-                <TableHead className="w-20 font-semibold">Rank</TableHead>
-                <TableHead className="font-semibold">Team</TableHead>
-                <TableHead className="text-center font-semibold hidden sm:table-cell">
-                  Round 1 (/50)
-                </TableHead>
-                <TableHead className="text-center font-semibold hidden sm:table-cell">
-                  Round 2 (/50)
-                </TableHead>
-                <TableHead className="text-center font-semibold">
-                  Total (/100)
-                </TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {sorted.map((entry: LeaderboardEntry, idx: number) => {
-                const rank = idx + 1;
-                const r1 = Number(entry.round1Total);
-                const r2 = Number(entry.round2Total);
-                const total = Number(entry.combinedTotal);
-                const ocid = `leaderboard.row.${rank}` as const;
-
-                return (
-                  <TableRow
-                    key={entry.team.id.toString()}
-                    className={`transition-colors ${getRowClass(rank)}`}
-                    data-ocid={ocid}
+          {/* Scrollable wrapper */}
+          <div className="overflow-x-auto">
+            <Table className="text-sm min-w-[900px]">
+              {/* Column group headers */}
+              <TableHeader>
+                <TableRow className="bg-muted/60 hover:bg-muted/60">
+                  {/* Rank + Team: no group label */}
+                  <GroupHead colSpan={2} className="border-r border-border/60">
+                    &nbsp;
+                  </GroupHead>
+                  {/* Round 1 group */}
+                  <GroupHead
+                    colSpan={6}
+                    className="border-r border-border/60 text-blue-600 bg-blue-50/60"
                   >
-                    <TableCell className="py-4">
-                      <RankBadge rank={rank} />
-                    </TableCell>
-                    <TableCell className="py-4">
-                      <div>
-                        <p className="font-semibold font-display text-foreground">
-                          {entry.team.name}
-                        </p>
-                        {entry.team.description && (
-                          <p className="text-xs text-muted-foreground mt-0.5 line-clamp-1">
-                            {entry.team.description}
+                    Round 1 &nbsp;
+                    <span className="font-normal opacity-70 normal-case">
+                      (max 50)
+                    </span>
+                  </GroupHead>
+                  {/* Round 2 group */}
+                  <GroupHead
+                    colSpan={6}
+                    className="border-r border-border/60 text-violet-600 bg-violet-50/60"
+                  >
+                    Round 2 &nbsp;
+                    <span className="font-normal opacity-70 normal-case">
+                      (max 50)
+                    </span>
+                  </GroupHead>
+                  {/* Combined */}
+                  <GroupHead colSpan={1} className="text-primary bg-primary/5">
+                    Total
+                  </GroupHead>
+                </TableRow>
+
+                {/* Sub-headers */}
+                <TableRow className="bg-muted/40 text-xs">
+                  <TableHead className="font-semibold w-16 py-2">
+                    Rank
+                  </TableHead>
+                  <TableHead className="font-semibold min-w-[140px] border-r border-border/60 py-2">
+                    Team
+                  </TableHead>
+
+                  {/* R1 individual */}
+                  <TableHead className="text-center font-medium text-blue-700 py-2 px-2 min-w-[70px]">
+                    Problem
+                    <br />
+                    <span className="text-[10px] text-muted-foreground font-normal">
+                      /10
+                    </span>
+                  </TableHead>
+                  <TableHead className="text-center font-medium text-blue-700 py-2 px-2 min-w-[70px]">
+                    Innovation
+                    <br />
+                    <span className="text-[10px] text-muted-foreground font-normal">
+                      /10
+                    </span>
+                  </TableHead>
+                  <TableHead className="text-center font-medium text-blue-700 py-2 px-2 min-w-[70px]">
+                    System
+                    <br />
+                    <span className="text-[10px] text-muted-foreground font-normal">
+                      /10
+                    </span>
+                  </TableHead>
+                  <TableHead className="text-center font-medium text-blue-700 py-2 px-2 min-w-[70px]">
+                    Prototype
+                    <br />
+                    <span className="text-[10px] text-muted-foreground font-normal">
+                      /10
+                    </span>
+                  </TableHead>
+                  <TableHead className="text-center font-medium text-blue-700 py-2 px-2 min-w-[70px]">
+                    Explain
+                    <br />
+                    <span className="text-[10px] text-muted-foreground font-normal">
+                      /10
+                    </span>
+                  </TableHead>
+                  <TableHead className="text-center font-semibold text-blue-800 py-2 px-2 border-r border-border/60 min-w-[70px]">
+                    R1 Total
+                    <br />
+                    <span className="text-[10px] text-muted-foreground font-normal">
+                      /50
+                    </span>
+                  </TableHead>
+
+                  {/* R2 individual */}
+                  <TableHead className="text-center font-medium text-violet-700 py-2 px-2 min-w-[70px]">
+                    Final
+                    <br />
+                    <span className="text-[10px] text-muted-foreground font-normal">
+                      /15
+                    </span>
+                  </TableHead>
+                  <TableHead className="text-center font-medium text-violet-700 py-2 px-2 min-w-[70px]">
+                    Complexity
+                    <br />
+                    <span className="text-[10px] text-muted-foreground font-normal">
+                      /10
+                    </span>
+                  </TableHead>
+                  <TableHead className="text-center font-medium text-violet-700 py-2 px-2 min-w-[70px]">
+                    Function
+                    <br />
+                    <span className="text-[10px] text-muted-foreground font-normal">
+                      /10
+                    </span>
+                  </TableHead>
+                  <TableHead className="text-center font-medium text-violet-700 py-2 px-2 min-w-[60px]">
+                    UI/UX
+                    <br />
+                    <span className="text-[10px] text-muted-foreground font-normal">
+                      /5
+                    </span>
+                  </TableHead>
+                  <TableHead className="text-center font-medium text-violet-700 py-2 px-2 min-w-[70px]">
+                    Impact
+                    <br />
+                    <span className="text-[10px] text-muted-foreground font-normal">
+                      /10
+                    </span>
+                  </TableHead>
+                  <TableHead className="text-center font-semibold text-violet-800 py-2 px-2 border-r border-border/60 min-w-[70px]">
+                    R2 Total
+                    <br />
+                    <span className="text-[10px] text-muted-foreground font-normal">
+                      /50
+                    </span>
+                  </TableHead>
+
+                  {/* Combined */}
+                  <TableHead className="text-center font-bold text-primary py-2 px-2 min-w-[80px]">
+                    Combined
+                    <br />
+                    <span className="text-[10px] text-muted-foreground font-normal">
+                      /100
+                    </span>
+                  </TableHead>
+                </TableRow>
+              </TableHeader>
+
+              <TableBody>
+                {sorted.map((entry: LeaderboardEntry, idx: number) => {
+                  const rank = idx + 1;
+                  const r1 = entry.round1Score;
+                  const r2 = entry.round2Score;
+                  const total = Number(entry.combinedTotal);
+                  const ocid = `leaderboard.row.${rank}` as const;
+
+                  return (
+                    <TableRow
+                      key={entry.team.id.toString()}
+                      className={`transition-colors ${getRowClass(rank)}`}
+                      data-ocid={ocid}
+                    >
+                      {/* Rank */}
+                      <TableCell className="py-2.5 px-3">
+                        <RankBadge rank={rank} />
+                      </TableCell>
+
+                      {/* Team */}
+                      <TableCell className="py-2.5 border-r border-border/40">
+                        <div>
+                          <p className="font-semibold font-display text-foreground text-sm leading-tight">
+                            {entry.team.name}
                           </p>
-                        )}
-                      </div>
-                    </TableCell>
-                    <TableCell className="text-center hidden sm:table-cell py-4">
-                      <ScoreBadge score={r1} max={50} variant="r1" />
-                    </TableCell>
-                    <TableCell className="text-center hidden sm:table-cell py-4">
-                      <ScoreBadge score={r2} max={50} variant="r2" />
-                    </TableCell>
-                    <TableCell className="text-center py-4">
-                      <ScoreBadge score={total} max={100} />
-                    </TableCell>
-                  </TableRow>
-                );
-              })}
-            </TableBody>
-          </Table>
+                          {entry.team.description && (
+                            <p className="text-xs text-muted-foreground mt-0.5 line-clamp-1">
+                              {entry.team.description}
+                            </p>
+                          )}
+                        </div>
+                      </TableCell>
+
+                      {/* R1 criteria */}
+                      <TableCell className="text-center py-2.5 px-2">
+                        <CriteriaCell
+                          value={r1?.problemUnderstanding}
+                          max={10}
+                        />
+                      </TableCell>
+                      <TableCell className="text-center py-2.5 px-2">
+                        <CriteriaCell value={r1?.innovation} max={10} />
+                      </TableCell>
+                      <TableCell className="text-center py-2.5 px-2">
+                        <CriteriaCell value={r1?.systemDesign} max={10} />
+                      </TableCell>
+                      <TableCell className="text-center py-2.5 px-2">
+                        <CriteriaCell value={r1?.prototypeProgress} max={10} />
+                      </TableCell>
+                      <TableCell className="text-center py-2.5 px-2">
+                        <CriteriaCell value={r1?.teamExplanation} max={10} />
+                      </TableCell>
+                      <TableCell className="text-center py-2.5 px-2 border-r border-border/40">
+                        <TotalCell score={Number(entry.round1Total)} max={50} />
+                      </TableCell>
+
+                      {/* R2 criteria */}
+                      <TableCell className="text-center py-2.5 px-2">
+                        <CriteriaCell value={r2?.finalPrototype} max={15} />
+                      </TableCell>
+                      <TableCell className="text-center py-2.5 px-2">
+                        <CriteriaCell
+                          value={r2?.technicalComplexity}
+                          max={10}
+                        />
+                      </TableCell>
+                      <TableCell className="text-center py-2.5 px-2">
+                        <CriteriaCell value={r2?.functionality} max={10} />
+                      </TableCell>
+                      <TableCell className="text-center py-2.5 px-2">
+                        <CriteriaCell value={r2?.uiUx} max={5} />
+                      </TableCell>
+                      <TableCell className="text-center py-2.5 px-2">
+                        <CriteriaCell value={r2?.realWorldImpact} max={10} />
+                      </TableCell>
+                      <TableCell className="text-center py-2.5 px-2 border-r border-border/40">
+                        <TotalCell score={Number(entry.round2Total)} max={50} />
+                      </TableCell>
+
+                      {/* Combined */}
+                      <TableCell className="text-center py-2.5 px-2">
+                        <TotalCell score={total} max={100} />
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
+              </TableBody>
+            </Table>
+          </div>
+
+          {/* Scroll hint for mobile */}
+          <div className="sm:hidden px-4 py-2 border-t border-border/40 bg-muted/30">
+            <p className="text-xs text-muted-foreground text-center">
+              ← Scroll horizontally to see all scores →
+            </p>
+          </div>
         </motion.div>
       )}
     </div>

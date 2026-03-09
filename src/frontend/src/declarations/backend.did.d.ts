@@ -11,9 +11,11 @@ import type { IDL } from '@icp-sdk/core/candid';
 import type { Principal } from '@icp-sdk/core/principal';
 
 export interface LeaderboardEntry {
+  'round2Score' : [] | [Round2Score],
   'combinedTotal' : bigint,
   'round1Total' : bigint,
   'team' : Team,
+  'round1Score' : [] | [Round1Score],
   'round2Total' : bigint,
 }
 export interface Round1Score {

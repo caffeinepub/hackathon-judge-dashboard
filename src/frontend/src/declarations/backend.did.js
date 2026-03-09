@@ -19,11 +19,13 @@ export const Team = IDL.Record({
   'description' : IDL.Text,
 });
 export const UserProfile = IDL.Record({ 'name' : IDL.Text });
-export const LeaderboardEntry = IDL.Record({
-  'combinedTotal' : IDL.Nat,
-  'round1Total' : IDL.Nat,
-  'team' : Team,
-  'round2Total' : IDL.Nat,
+export const Round2Score = IDL.Record({
+  'realWorldImpact' : IDL.Nat,
+  'technicalComplexity' : IDL.Nat,
+  'uiUx' : IDL.Nat,
+  'finalPrototype' : IDL.Nat,
+  'totalScore' : IDL.Nat,
+  'functionality' : IDL.Nat,
 });
 export const Round1Score = IDL.Record({
   'problemUnderstanding' : IDL.Nat,
@@ -33,13 +35,13 @@ export const Round1Score = IDL.Record({
   'totalScore' : IDL.Nat,
   'teamExplanation' : IDL.Nat,
 });
-export const Round2Score = IDL.Record({
-  'realWorldImpact' : IDL.Nat,
-  'technicalComplexity' : IDL.Nat,
-  'uiUx' : IDL.Nat,
-  'finalPrototype' : IDL.Nat,
-  'totalScore' : IDL.Nat,
-  'functionality' : IDL.Nat,
+export const LeaderboardEntry = IDL.Record({
+  'round2Score' : IDL.Opt(Round2Score),
+  'combinedTotal' : IDL.Nat,
+  'round1Total' : IDL.Nat,
+  'team' : Team,
+  'round1Score' : IDL.Opt(Round1Score),
+  'round2Total' : IDL.Nat,
 });
 
 export const idlService = IDL.Service({
@@ -82,11 +84,13 @@ export const idlFactory = ({ IDL }) => {
     'description' : IDL.Text,
   });
   const UserProfile = IDL.Record({ 'name' : IDL.Text });
-  const LeaderboardEntry = IDL.Record({
-    'combinedTotal' : IDL.Nat,
-    'round1Total' : IDL.Nat,
-    'team' : Team,
-    'round2Total' : IDL.Nat,
+  const Round2Score = IDL.Record({
+    'realWorldImpact' : IDL.Nat,
+    'technicalComplexity' : IDL.Nat,
+    'uiUx' : IDL.Nat,
+    'finalPrototype' : IDL.Nat,
+    'totalScore' : IDL.Nat,
+    'functionality' : IDL.Nat,
   });
   const Round1Score = IDL.Record({
     'problemUnderstanding' : IDL.Nat,
@@ -96,13 +100,13 @@ export const idlFactory = ({ IDL }) => {
     'totalScore' : IDL.Nat,
     'teamExplanation' : IDL.Nat,
   });
-  const Round2Score = IDL.Record({
-    'realWorldImpact' : IDL.Nat,
-    'technicalComplexity' : IDL.Nat,
-    'uiUx' : IDL.Nat,
-    'finalPrototype' : IDL.Nat,
-    'totalScore' : IDL.Nat,
-    'functionality' : IDL.Nat,
+  const LeaderboardEntry = IDL.Record({
+    'round2Score' : IDL.Opt(Round2Score),
+    'combinedTotal' : IDL.Nat,
+    'round1Total' : IDL.Nat,
+    'team' : Team,
+    'round1Score' : IDL.Opt(Round1Score),
+    'round2Total' : IDL.Nat,
   });
   
   return IDL.Service({
